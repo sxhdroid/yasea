@@ -24,8 +24,6 @@ public class SrsEncoder {
     public static final String VCODEC = "video/avc";
     public static final String ACODEC = "audio/mp4a-latm";
     public static String x264Preset = "veryfast";
-    public static int vPrevWidth = 640;
-    public static int vPrevHeight = 360;
     public static int vPortraitWidth = 360;
     public static int vPortraitHeight = 640;
     public static int vLandscapeWidth = 640;
@@ -49,7 +47,7 @@ public class SrsEncoder {
     private MediaCodec aencoder;
 
     private boolean networkWeakTriggered = false;
-    private boolean mCameraFaceFront = true;
+//    private boolean mCameraFaceFront = true;
     private boolean useSoftEncoder = false;
     private boolean canSoftEncode = false;
 
@@ -174,6 +172,7 @@ public class SrsEncoder {
     public void pause(){
         mPausetime = System.nanoTime() / 1000;
     }
+
     public void resume(){
         long resumeTime = (System.nanoTime() / 1000) - mPausetime;
         mPresentTimeUs = mPresentTimeUs + resumeTime;
@@ -208,13 +207,13 @@ public class SrsEncoder {
         }
     }
 
-    public void setCameraFrontFace() {
-        mCameraFaceFront = true;
-    }
-
-    public void setCameraBackFace() {
-        mCameraFaceFront = false;
-    }
+//    public void setCameraFrontFace() {
+//        mCameraFaceFront = true;
+//    }
+//
+//    public void setCameraBackFace() {
+//        mCameraFaceFront = false;
+//    }
 
     public void switchToSoftEncoder() {
         useSoftEncoder = true;
@@ -238,11 +237,6 @@ public class SrsEncoder {
 
     public boolean isEnabled() {
         return canHardEncode() || canSoftEncode();
-    }
-
-    public void setPreviewResolution(int width, int height) {
-        vPrevWidth = width;
-        vPrevHeight = height;
     }
 
     public void setPortraitResolution(int width, int height) {
@@ -271,14 +265,6 @@ public class SrsEncoder {
     public void setVideoSmoothMode() {
         vBitrate = 500 * 1024;  // 500 kbps
         x264Preset = "superfast";
-    }
-
-    public int getPreviewWidth() {
-        return vPrevWidth;
-    }
-
-    public int getPreviewHeight() {
-        return vPrevHeight;
     }
 
     public int getOutputWidth() {

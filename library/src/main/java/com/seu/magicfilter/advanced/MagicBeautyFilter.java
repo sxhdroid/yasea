@@ -2,10 +2,10 @@ package com.seu.magicfilter.advanced;
 
 import android.opengl.GLES20;
 
-import com.seu.magicfilter.utils.MagicFilterType;
-import net.ossrs.yasea.R;
-
 import com.seu.magicfilter.base.gpuimage.GPUImageFilter;
+import com.seu.magicfilter.utils.MagicFilterType;
+
+import net.ossrs.yasea.R;
 
 /**
  * Created by Administrator on 2016/5/22.
@@ -17,6 +17,7 @@ public class MagicBeautyFilter extends GPUImageFilter{
         super(MagicFilterType.BEAUTY, R.raw.beauty);
     }
 
+    @Override
     protected void onInit() {
         super.onInit();
         mSingleStepOffsetLocation = GLES20.glGetUniformLocation(getProgram(), "singleStepOffset");

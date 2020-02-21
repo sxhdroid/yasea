@@ -26,6 +26,7 @@ import com.seu.magicfilter.utils.OpenGLUtils;
 
 import net.ossrs.yasea.R;
 
+import java.lang.ref.WeakReference;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.nio.FloatBuffer;
@@ -35,7 +36,7 @@ import java.util.LinkedList;
 public class GPUImageFilter {
 
     private boolean mIsInitialized;
-    private Context mContext;
+    private WeakReference<Context> mContext;
     private MagicFilterType mType = MagicFilterType.NONE;
     private final LinkedList<Runnable> mRunOnDraw;
     private final int mVertexShaderId;
@@ -54,8 +55,8 @@ public class GPUImageFilter {
     protected FloatBuffer mGLCubeBuffer;
     protected FloatBuffer mGLTextureBuffer;
 
-    private int[] mGLCubeId;
-    private int[] mGLTextureCoordinateId;
+    protected int[] mGLCubeId;
+    protected int[] mGLTextureCoordinateId;
     private float[] mGLTextureTransformMatrix;
 
     private int[] mGLFboId;
@@ -82,7 +83,7 @@ public class GPUImageFilter {
     }
 
     public void init(Context context) {
-        mContext = context;
+        mContext = new WeakReference<>(context);
         onInit();
         onInitialized();
     }
@@ -127,7 +128,7 @@ public class GPUImageFilter {
         mGLInputImageTextureIndex = GLES20.glGetUniformLocation(mGLProgId, "inputImageTexture");
     }
 
-    private void initVbo() {
+    protected void initVbo() {
         final float VEX_CUBE[] = {
             -1.0f, -1.0f, // Bottom left.
             1.0f, -1.0f, // Bottom right.
@@ -307,7 +308,10 @@ public class GPUImageFilter {
     }
 
     protected Context getContext() {
-        return mContext;
+        if (mContext != null) {
+            return mContext.get();
+        }
+        return null;
     }
 
     protected MagicFilterType getFilterType() {
