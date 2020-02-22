@@ -16,10 +16,12 @@
 
 package com.seu.magicfilter.base.gpuimage;
 
+import android.app.Activity;
 import android.content.Context;
 import android.graphics.PointF;
 import android.opengl.GLES11Ext;
 import android.opengl.GLES20;
+import android.view.Surface;
 
 import com.seu.magicfilter.utils.MagicFilterType;
 import com.seu.magicfilter.utils.OpenGLUtils;
@@ -35,9 +37,62 @@ import java.util.LinkedList;
 
 public class GPUImageFilter {
 
+    private final float VEX_CUBE[] = {
+            // Bottom left.
+            -1.0f, -1.0f,
+            // Bottom right.
+            1.0f, -1.0f,
+            // Top left.
+            -1.0f, 1.0f,
+            // Top right.
+            1.0f, 1.0f,
+    };
+
+    private final float TEX_COORD[] = {
+            // Bottom left.
+            0.0f, 0.0f,
+            // Bottom right.
+            1.0f, 0.0f,
+            // Top left.
+            0.0f, 1.0f,
+            // Top right.
+            1.0f, 1.0f
+    };
+
+    /**
+     * 在0°基础上逆时针旋转90°
+     */
+    private final float TEX_COORD_ROTATION_90[] = {
+            // Bottom left.
+            0.0f, 1.0f,
+            // Bottom right.
+            0.0f, 0.0f,
+            // Top left.
+            1.0f, 1.0f,
+            // Top right.
+            1.0f, 0.0f
+    };
+
+    /**
+     * 在0°基础上顺时针旋转90°
+     */
+    private final float TEX_COORD_ROTATION_270[] = {
+            // Bottom left.
+            1.0f, 0.0f,
+            // Bottom right.
+            1.0f, 1.0f,
+            // Top left.
+            0.0f, 0.0f,
+            // Top right.
+            0.0f, 1.0f
+    };
+
+    /** 最终使用的纹理矩阵*/
+    private float TEX_COORD_ROTATION[];
+
     private boolean mIsInitialized;
     private WeakReference<Context> mContext;
-    private MagicFilterType mType = MagicFilterType.NONE;
+    private MagicFilterType mType;
     private final LinkedList<Runnable> mRunOnDraw;
     private final int mVertexShaderId;
     private final int mFragmentShaderId;
@@ -129,27 +184,21 @@ public class GPUImageFilter {
     }
 
     protected void initVbo() {
-        final float VEX_CUBE[] = {
-            -1.0f, -1.0f, // Bottom left.
-            1.0f, -1.0f, // Bottom right.
-            -1.0f, 1.0f, // Top left.
-            1.0f, 1.0f, // Top right.
-        };
-
-        final float TEX_COORD[] = {
-            0.0f, 0.0f, // Bottom left.
-            1.0f, 0.0f, // Bottom right.
-            0.0f, 1.0f, // Top left.
-            1.0f, 1.0f // Top right.
-        };
-
         mGLCubeBuffer = ByteBuffer.allocateDirect(VEX_CUBE.length * 4)
-            .order(ByteOrder.nativeOrder()).asFloatBuffer();
+                .order(ByteOrder.nativeOrder()).asFloatBuffer();
         mGLCubeBuffer.put(VEX_CUBE).position(0);
+        int mAngle = getRotateDeg();
+        if (mAngle == Surface.ROTATION_270) {
+            TEX_COORD_ROTATION = TEX_COORD_ROTATION_270;
+        } else if (mAngle == Surface.ROTATION_90) {
+            TEX_COORD_ROTATION = TEX_COORD_ROTATION_90;
+        }  else {
+            TEX_COORD_ROTATION = TEX_COORD;
+        }
 
-        mGLTextureBuffer = ByteBuffer.allocateDirect(TEX_COORD.length * 4)
-            .order(ByteOrder.nativeOrder()).asFloatBuffer();
-        mGLTextureBuffer.put(TEX_COORD).position(0);
+        mGLTextureBuffer = ByteBuffer.allocateDirect(TEX_COORD_ROTATION.length * 4)
+                .order(ByteOrder.nativeOrder()).asFloatBuffer();
+        mGLTextureBuffer.put(TEX_COORD_ROTATION).position(0);
 
         mGLCubeId = new int[1];
         mGLTextureCoordinateId = new int[1];
@@ -317,7 +366,20 @@ public class GPUImageFilter {
     protected MagicFilterType getFilterType() {
         return mType;
     }
-    
+
+    /**
+     *
+     * @return Surface.ROTATION_0, Surface.ROTATION_90, Surface.ROTATION_180, Surface.ROTATION_270
+     */
+    private int getRotateDeg() {
+        try {
+            return  ((Activity) getContext()).getWindowManager().getDefaultDisplay().getRotation();
+        }catch (Exception e){
+            e.printStackTrace();
+        }
+        return -1;
+    }
+
     public void setTextureTransformMatrix(float[] mtx){
         mGLTextureTransformMatrix = mtx;
     }

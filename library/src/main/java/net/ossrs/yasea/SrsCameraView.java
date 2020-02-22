@@ -8,7 +8,6 @@ import android.opengl.Matrix;
 import android.util.AttributeSet;
 
 import com.seu.magicfilter.base.gpuimage.GPUImageFilter;
-import com.seu.magicfilter.base.gpuimage.GPUImageRotationFilter;
 import com.seu.magicfilter.utils.MagicFilterFactory;
 import com.seu.magicfilter.utils.MagicFilterType;
 import com.seu.magicfilter.utils.OpenGLUtils;
@@ -48,6 +47,7 @@ public class SrsCameraView extends GLSurfaceView implements GLSurfaceView.Render
     private PreviewCallback mPrevCb;
     private SurfaceCreatedCallback surfaceCreatedCallback;
 
+    // 预览屏幕方向
     private int previewOrientation;
 
     public SrsCameraView(Context context) {
@@ -66,9 +66,8 @@ public class SrsCameraView extends GLSurfaceView implements GLSurfaceView.Render
     public void onSurfaceCreated(GL10 gl, EGLConfig config) {
         GLES20.glDisable(GL10.GL_DITHER);
         GLES20.glClearColor(0, 0, 0, 0);
-        magicFilter = new GPUImageRotationFilter(MagicFilterType.ROTATION);
+        magicFilter = new GPUImageFilter();
         magicFilter.init(getContext());
-        magicFilter.onInputSizeChanged(mPreviewWidth, mPreviewHeight);
 
         mOESTextureId = OpenGLUtils.getExternalOESTextureID();
         surfaceTexture = new SurfaceTexture(mOESTextureId);
@@ -89,15 +88,17 @@ public class SrsCameraView extends GLSurfaceView implements GLSurfaceView.Render
         GLES20.glViewport(0, 0, width, height);
         mSurfaceWidth = width;
         mSurfaceHeight = height;
-        magicFilter.onDisplaySizeChanged(width, height);
+        magicFilter.onDisplaySizeChanged(mSurfaceWidth, mSurfaceHeight);
         magicFilter.onInputSizeChanged(mPreviewWidth, mPreviewHeight);
 
-        mOutputAspectRatio = width > height ? (float) width / height : (float) height / width;
+        mOutputAspectRatio = width > height
+                ? (float) height / width
+                : (float) width / height;
         float aspectRatio = mOutputAspectRatio / mInputAspectRatio;
         if (width > height) {
-            Matrix.orthoM(mProjectionMatrix, 0, -1.0f, 1.0f, -aspectRatio, aspectRatio, -1.0f, 1.0f);
-        } else {
             Matrix.orthoM(mProjectionMatrix, 0, -aspectRatio, aspectRatio, -1.0f, 1.0f, -1.0f, 1.0f);
+        } else {
+            Matrix.orthoM(mProjectionMatrix, 0, -1.0f, 1.0f, -aspectRatio, aspectRatio,-1.0f, 1.0f);
         }
     }
 
@@ -137,18 +138,12 @@ public class SrsCameraView extends GLSurfaceView implements GLSurfaceView.Render
         mPreviewWidth = width;
         mPreviewHeight = height;
 
-        //设定宽高比，调整预览窗口大小（调整后窗口大小不超过默认值）
-        if (mSurfaceWidth < mSurfaceHeight * mPreviewWidth / mPreviewHeight){
-            mSurfaceHeight =  mSurfaceWidth * mPreviewHeight / mPreviewWidth;
-        }else {
-            mSurfaceWidth = mSurfaceHeight * mPreviewWidth / mPreviewHeight;
-        }
-
-        getHolder().setFixedSize(mSurfaceWidth, mSurfaceHeight);
+        getHolder().setFixedSize(mPreviewWidth, mPreviewHeight);
 
         mGLPreviewBuffer = ByteBuffer.allocate(mPreviewWidth * mPreviewHeight * 4);
-        mInputAspectRatio = mPreviewWidth > mPreviewHeight ?
-            (float) mPreviewWidth / mPreviewHeight : (float) mPreviewHeight / mPreviewWidth;
+        mInputAspectRatio = width > height
+                ? (float) height / width
+                : (float) width / height;
 
         return new int[] { mPreviewWidth, mPreviewHeight };
     }
@@ -169,8 +164,21 @@ public class SrsCameraView extends GLSurfaceView implements GLSurfaceView.Render
         mPreviewWidth = w;
         mPreviewHeight = h;
         setPreviewResolution(mPreviewWidth, mPreviewHeight);
-        // 使用旋转画面滤镜
-        setFilter(MagicFilterType.ROTATION);
+        updataResolution();
+    }
+
+    private void updataResolution() {
+        queueEvent(new Runnable() {
+            @Override
+            public void run() {
+                if (magicFilter != null) {
+                    magicFilter.destroy();
+                    magicFilter.init(getContext());
+                    magicFilter.onInputSizeChanged(mPreviewWidth, mPreviewHeight);
+                    magicFilter.onDisplaySizeChanged(mSurfaceWidth, mSurfaceHeight);
+                }
+            }
+        });
     }
 
     public boolean setFilter(final MagicFilterType type) {

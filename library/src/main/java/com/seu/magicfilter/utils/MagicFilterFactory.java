@@ -48,7 +48,6 @@ import com.seu.magicfilter.base.gpuimage.GPUImageContrastFilter;
 import com.seu.magicfilter.base.gpuimage.GPUImageExposureFilter;
 import com.seu.magicfilter.base.gpuimage.GPUImageFilter;
 import com.seu.magicfilter.base.gpuimage.GPUImageHueFilter;
-import com.seu.magicfilter.base.gpuimage.GPUImageRotationFilter;
 import com.seu.magicfilter.base.gpuimage.GPUImageSaturationFilter;
 import com.seu.magicfilter.base.gpuimage.GPUImageSharpenFilter;
 
@@ -58,8 +57,6 @@ public class MagicFilterFactory {
         switch (type) {
             case NONE:
                 return new GPUImageFilter();
-            case ROTATION:
-                return new GPUImageRotationFilter();
             case WHITECAT:
                 return new MagicWhiteCatFilter();
             case BLACKCAT:

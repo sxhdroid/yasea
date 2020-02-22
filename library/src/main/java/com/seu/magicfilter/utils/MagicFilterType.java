@@ -5,7 +5,6 @@ package com.seu.magicfilter.utils;
  */
 public enum  MagicFilterType {
     NONE,
-    ROTATION, // 旋转
     FAIRYTALE,
     SUNRISE,
     SUNSET,
