@@ -100,6 +100,7 @@ public class RtmpConnection implements RtmpPublisher {
 
     @Override
     public synchronized boolean connect(String url) {
+        mHandler.notifyRtmpConnecting("Connecting");
         Matcher matcher = rtmpUrlPattern.matcher(url);
         if (matcher.matches()) {
             tcUrl = url.substring(0, url.lastIndexOf('/'));
@@ -186,7 +187,6 @@ public class RtmpConnection implements RtmpPublisher {
         args.setProperty("objectEncoding", 0);
         invoke.addData(args);
         sendRtmpPacket(invoke);
-        mHandler.notifyRtmpConnecting("Connecting");
 
         synchronized (connectingLock) {
             try {
