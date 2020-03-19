@@ -834,6 +834,9 @@ public class SrsMp4Muxer {
 
     private void finishMovie() {
         try {
+            if (fos == null) {
+                return;
+            }
             if (flushBytes > 0) {
                 fos.flush();
                 flushBytes = 0;
