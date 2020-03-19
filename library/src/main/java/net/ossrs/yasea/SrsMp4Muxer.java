@@ -118,7 +118,12 @@ public class SrsMp4Muxer {
         }
 
         mRecFile = outputFile;
-        createMovie(mRecFile);
+        try {
+            createMovie(mRecFile);
+        } catch (IOException e) {
+            mHandler.notifyRecordIOException(e);
+            return false;
+        }
         mHandler.notifyRecordStarted(mRecFile.getPath());
 
 //        if (!spsList.isEmpty() && !ppsList.isEmpty()) {
@@ -777,20 +782,15 @@ public class SrsMp4Muxer {
     private volatile long flushBytes = 0;
     private HashMap<Track, long[]> track2SampleSizes = new HashMap<>();
 
-    private void createMovie(File outputFile) {
-        try {
-            fos = new FileOutputStream(outputFile);
-            fc = fos.getChannel();
-            mdat = new InterleaveChunkMdat();
-            mdatOffset = 0;
+    private void createMovie(File outputFile) throws IOException {
+        fos = new FileOutputStream(outputFile);
+        fc = fos.getChannel();
+        mdat = new InterleaveChunkMdat();
+        mdatOffset = 0;
 
-            FileTypeBox fileTypeBox = createFileTypeBox();
-            fileTypeBox.getBox(fc);
-            recFileSize += fileTypeBox.getSize();
-        } catch (IOException e) {
-            e.printStackTrace();
-            mHandler.notifyRecordIOException(e);
-        }
+        FileTypeBox fileTypeBox = createFileTypeBox();
+        fileTypeBox.getBox(fc);
+        recFileSize += fileTypeBox.getSize();
     }
 
     private void writeSampleData(ByteBuffer byteBuf, MediaCodec.BufferInfo bi, boolean isAudio) {
