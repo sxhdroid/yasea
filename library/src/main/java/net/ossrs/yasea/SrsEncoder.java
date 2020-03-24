@@ -157,7 +157,7 @@ public class SrsEncoder {
         videoFormat.setInteger(MediaFormat.KEY_MAX_INPUT_SIZE, 0);
         videoFormat.setInteger(MediaFormat.KEY_BIT_RATE, vBitrate);
         videoFormat.setInteger(MediaFormat.KEY_FRAME_RATE, VFPS);
-        videoFormat.setInteger(MediaFormat.KEY_BITRATE_MODE, MediaCodecInfo.EncoderCapabilities.BITRATE_MODE_CQ);
+        videoFormat.setInteger(MediaFormat.KEY_BITRATE_MODE, MediaCodecInfo.EncoderCapabilities.BITRATE_MODE_CBR);
         videoFormat.setInteger(MediaFormat.KEY_I_FRAME_INTERVAL, VGOP/VFPS);
         vencoder.configure(videoFormat, null, null, MediaCodec.CONFIGURE_FLAG_ENCODE);
         // add the video tracker to muxer.
@@ -266,6 +266,11 @@ public class SrsEncoder {
     public void setVideoSmoothMode() {
         vBitrate = 500 * 1024;  // 500 kbps
         x264Preset = "superfast";
+    }
+
+    public void setBitrate(int vBitrate) {
+        SrsEncoder.vBitrate = vBitrate;
+        x264Preset = "veryfast";
     }
 
     public int getOutputWidth() {

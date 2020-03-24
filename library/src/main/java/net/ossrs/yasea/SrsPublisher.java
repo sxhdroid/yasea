@@ -300,4 +300,12 @@ public class SrsPublisher {
             mEncoder.setMp4Muxer(mMp4Muxer);
         }
     }
+
+    /**
+     * 设置视频 bitrate
+     * @param vBitrate 比特率
+     */
+    public void setBitrate(int vBitrate) {
+        mEncoder.setBitrate(vBitrate);
+    }
 }
