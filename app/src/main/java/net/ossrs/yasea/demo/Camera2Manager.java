@@ -67,7 +67,7 @@ public class Camera2Manager {
     private SrsCameraView previewView;
 
     // 摄像头ID（通常0代表后置摄像头，1代表前置摄像头）
-    private String mCameraId = "1";
+    private String mCameraId = "0";
     // 定义代表摄像头的成员变量
     private CameraDevice cameraDevice;
     // 预览尺寸
