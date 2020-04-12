@@ -32,7 +32,6 @@ public class SrsCameraView extends GLSurfaceView implements GLSurfaceView.Render
     private int mPreviewWidth;
     private int mPreviewHeight;
     private volatile boolean mIsEncoding;
-    private boolean mIsTorchOn = false;
     private float mInputAspectRatio;
     private float mOutputAspectRatio;
     private float[] mProjectionMatrix = new float[16];
@@ -88,17 +87,15 @@ public class SrsCameraView extends GLSurfaceView implements GLSurfaceView.Render
         GLES20.glViewport(0, 0, width, height);
         mSurfaceWidth = width;
         mSurfaceHeight = height;
-        magicFilter.onDisplaySizeChanged(mSurfaceWidth, mSurfaceHeight);
+        magicFilter.onDisplaySizeChanged(width, height);
         magicFilter.onInputSizeChanged(mPreviewWidth, mPreviewHeight);
 
-        mOutputAspectRatio = width > height
-                ? (float) height / width
-                : (float) width / height;
+        mOutputAspectRatio = width > height ? (float) width / height : (float) height / width;
         float aspectRatio = mOutputAspectRatio / mInputAspectRatio;
         if (width > height) {
-            Matrix.orthoM(mProjectionMatrix, 0, -aspectRatio, aspectRatio, -1.0f, 1.0f, -1.0f, 1.0f);
+            Matrix.orthoM(mProjectionMatrix, 0, -1.0f, 1.0f, -aspectRatio, aspectRatio, -1.0f, 1.0f);
         } else {
-            Matrix.orthoM(mProjectionMatrix, 0, -1.0f, 1.0f, -aspectRatio, aspectRatio,-1.0f, 1.0f);
+            Matrix.orthoM(mProjectionMatrix, 0, -aspectRatio, aspectRatio, -1.0f, 1.0f, -1.0f, 1.0f);
         }
     }
 
@@ -138,12 +135,18 @@ public class SrsCameraView extends GLSurfaceView implements GLSurfaceView.Render
         mPreviewWidth = width;
         mPreviewHeight = height;
 
-        getHolder().setFixedSize(mPreviewWidth, mPreviewHeight);
+        //设定宽高比，调整预览窗口大小（调整后窗口大小不超过默认值）
+        if (mSurfaceWidth < mSurfaceHeight * mPreviewWidth / mPreviewHeight){
+            mSurfaceHeight =  mSurfaceWidth * mPreviewHeight / mPreviewWidth;
+        }else {
+            mSurfaceWidth = mSurfaceHeight * mPreviewWidth / mPreviewHeight;
+        }
+
+        getHolder().setFixedSize(mSurfaceWidth, mSurfaceHeight);
 
         mGLPreviewBuffer = ByteBuffer.allocate(mPreviewWidth * mPreviewHeight * 4);
-        mInputAspectRatio = width > height
-                ? (float) height / width
-                : (float) width / height;
+        mInputAspectRatio = mPreviewWidth > mPreviewHeight ?
+            (float) mPreviewWidth / mPreviewHeight : (float) mPreviewHeight / mPreviewWidth;
 
         return new int[] { mPreviewWidth, mPreviewHeight };
     }
@@ -164,10 +167,10 @@ public class SrsCameraView extends GLSurfaceView implements GLSurfaceView.Render
         mPreviewWidth = w;
         mPreviewHeight = h;
         setPreviewResolution(mPreviewWidth, mPreviewHeight);
-        updataResolution();
+        updateResolution();
     }
 
-    private void updataResolution() {
+    private void updateResolution() {
         queueEvent(new Runnable() {
             @Override
             public void run() {
