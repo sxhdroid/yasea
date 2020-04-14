@@ -31,6 +31,7 @@ public class SrsPublisher {
     private SrsFlvMuxer mFlvMuxer;
     private SrsMp4Muxer mMp4Muxer;
     private SrsEncoder mEncoder;
+    private SrsCameraView.CaptureFrameCallback captureFrameCallback;
 
     public SrsPublisher(SrsCameraView view) {
         mCameraView = view;
@@ -41,8 +42,27 @@ public class SrsPublisher {
                 if (!sendAudioOnly) {
                     mEncoder.onGetRgbaFrame(data, width, height);
                 }
+
             }
         });
+        mCameraView.setCaptureFrameCallback(new SrsCameraView.CaptureFrameCallback() {
+            @Override
+            public void onCaptureFrame(byte[] data, int width, int height) {
+                if (captureFrameCallback != null) {
+                    captureFrameCallback.onCaptureFrame(data, width, height);
+                    captureFrameCallback = null;
+                }
+            }
+        });
+    }
+
+    /**
+     * 截取当前帧
+     * @param callback 截取结果回到
+     */
+    public void requestCaptureFrame(SrsCameraView.CaptureFrameCallback callback) {
+        this.captureFrameCallback = callback;
+        mCameraView.requestCaptureFrame();
     }
 
     private void calcSamplingFps() {
@@ -308,4 +328,5 @@ public class SrsPublisher {
     public void setBitrate(int vBitrate) {
         mEncoder.setBitrate(vBitrate);
     }
+
 }

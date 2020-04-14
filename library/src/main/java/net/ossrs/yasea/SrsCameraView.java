@@ -13,6 +13,7 @@ import com.seu.magicfilter.utils.MagicFilterType;
 import com.seu.magicfilter.utils.OpenGLUtils;
 
 import java.nio.ByteBuffer;
+import java.nio.ByteOrder;
 import java.nio.IntBuffer;
 import java.util.concurrent.ConcurrentLinkedQueue;
 
@@ -32,6 +33,7 @@ public class SrsCameraView extends GLSurfaceView implements GLSurfaceView.Render
     private int mPreviewWidth;
     private int mPreviewHeight;
     private volatile boolean mIsEncoding;
+    private volatile boolean mRequestCaptureFrame;
     private float mInputAspectRatio;
     private float mOutputAspectRatio;
     private float[] mProjectionMatrix = new float[16];
@@ -45,6 +47,7 @@ public class SrsCameraView extends GLSurfaceView implements GLSurfaceView.Render
     private ConcurrentLinkedQueue<IntBuffer> mGLIntBufferCache = new ConcurrentLinkedQueue<>();
     private PreviewCallback mPrevCb;
     private SurfaceCreatedCallback surfaceCreatedCallback;
+    private CaptureFrameCallback captureFrameCallback;
 
     // 预览屏幕方向
     private int previewOrientation;
@@ -118,6 +121,25 @@ public class SrsCameraView extends GLSurfaceView implements GLSurfaceView.Render
                 writeLock.notifyAll();
             }
         }
+
+        // 拍照
+        if (mRequestCaptureFrame && captureFrameCallback != null) {
+            IntBuffer picture = magicFilter.getGLFboBuffer();
+            ByteBuffer buf = ByteBuffer.allocateDirect(mPreviewWidth * mPreviewHeight * 4);
+            buf.order(ByteOrder.LITTLE_ENDIAN);
+            buf.asIntBuffer().put(picture.array());
+            buf.rewind();
+            captureFrameCallback.onCaptureFrame(buf.array(), mPreviewWidth, mPreviewHeight);
+            buf.clear();
+            mRequestCaptureFrame = false;
+        }
+    }
+
+    /**
+     * 请求截取帧
+     */
+    public void requestCaptureFrame() {
+        this.mRequestCaptureFrame =  true;
     }
 
     public SurfaceTexture getSurfaceTexture() {
@@ -126,6 +148,10 @@ public class SrsCameraView extends GLSurfaceView implements GLSurfaceView.Render
 
     public void setPreviewCallback(PreviewCallback cb) {
         mPrevCb = cb;
+    }
+
+    public void setCaptureFrameCallback(CaptureFrameCallback captureFrameCallback) {
+        this.captureFrameCallback = captureFrameCallback;
     }
 
     public int[] setPreviewResolution(int width, int height) {
@@ -261,6 +287,10 @@ public class SrsCameraView extends GLSurfaceView implements GLSurfaceView.Render
     public interface PreviewCallback {
 
         void onGetRgbaFrame(byte[] data, int width, int height);
+    }
+
+    public interface CaptureFrameCallback {
+        void onCaptureFrame(byte[] data, int width, int height);
     }
 
     /**
