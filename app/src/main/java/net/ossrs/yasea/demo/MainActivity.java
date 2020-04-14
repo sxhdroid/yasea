@@ -22,8 +22,10 @@ import net.ossrs.yasea.SrsEncodeHandler;
 import net.ossrs.yasea.SrsPublisher;
 import net.ossrs.yasea.SrsRecordHandler;
 
+import java.io.File;
 import java.io.IOException;
 import java.net.SocketException;
+import java.nio.ByteBuffer;
 import java.util.Random;
 
 public class MainActivity extends AppCompatActivity implements RtmpHandler.RtmpListener,
@@ -38,7 +40,7 @@ public class MainActivity extends AppCompatActivity implements RtmpHandler.RtmpL
     private Button btnPause;
 
     private SharedPreferences sp;
-    private String rtmpUrl = "rtmp://172.20.10.2:1935/test/live";
+    private String rtmpUrl = "rtmp://192.168.0.100:1935/b2a0844ecddf339c/73";
 //    private String rtmpUrl = "rtmp://ossrs.net/" + getRandomAlphaString(3) + '/' + getRandomAlphaDigitString(5);
     private String recPath = Environment.getExternalStorageDirectory().getPath() + "/test.mp4";
 
@@ -71,7 +73,7 @@ public class MainActivity extends AppCompatActivity implements RtmpHandler.RtmpL
         btnSwitchEncoder = (Button) findViewById(R.id.swEnc);
         btnPause = (Button) findViewById(R.id.pause);
         btnPause.setEnabled(false);
-        mCameraView = (SrsCameraView) findViewById(R.id.glsurfaceview_camera);
+        mCameraView = findViewById(R.id.glsurfaceview_camera);
         mCameraView.setSurfaceCreatedCallback(new SrsCameraView.SurfaceCreatedCallback() {
             @Override
             public void onSurfaceCreated() {
@@ -80,11 +82,12 @@ public class MainActivity extends AppCompatActivity implements RtmpHandler.RtmpL
                     public void run() {
                         camera2Manager = new Camera2Manager(MainActivity.this);
                         camera2Manager.setPreviewView(mCameraView);
-                        camera2Manager.openCamera(960, 720);
+                        camera2Manager.openCamera(1920, 1080);
                     }
                 });
             }
         });
+//        mCameraView.setFilter(MagicFilterType.BLEND);
 
         mPublisher = new SrsPublisher(mCameraView);
         mPublisher.setEncodeHandler(new SrsEncodeHandler(this));
@@ -93,7 +96,7 @@ public class MainActivity extends AppCompatActivity implements RtmpHandler.RtmpL
 //        mPublisher.setOutputResolution(360, 640);
         mPublisher.setVideoHDMode();
 //        mPublisher.startCamera();
-      
+
         btnPublish.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
@@ -148,11 +151,13 @@ public class MainActivity extends AppCompatActivity implements RtmpHandler.RtmpL
             @Override
             public void onClick(View v) {
                 if (btnRecord.getText().toString().contentEquals("record")) {
+                    mPublisher.startEncode();
                     if (mPublisher.startRecord(recPath)) {
                         btnRecord.setText("pause");
                     }
                 } else if (btnRecord.getText().toString().contentEquals("pause")) {
-                    mPublisher.pauseRecord();
+                    mPublisher.stopEncode();
+                    mPublisher.stopRecord();
                     btnRecord.setText("resume");
                 } else if (btnRecord.getText().toString().contentEquals("resume")) {
                     mPublisher.resumeRecord();
@@ -171,6 +176,21 @@ public class MainActivity extends AppCompatActivity implements RtmpHandler.RtmpL
                     mPublisher.switchToHardEncoder();
                     btnSwitchEncoder.setText("soft encoder");
                 }
+            }
+        });
+
+        findViewById(R.id.capture).setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                mPublisher.requestCaptureFrame(new SrsCameraView.CaptureFrameCallback() {
+                    @Override
+                    public void onCaptureFrame(byte[] data, int width, int height) {
+                        File path = Environment
+                                .getExternalStoragePublicDirectory(Environment.DIRECTORY_PICTURES);
+                        File file = new File(path,  "测试_" + System.currentTimeMillis() + ".jpg");
+                        BitmapUtils.saveBitmap(file.getAbsolutePath(), ByteBuffer.wrap(data), width, height);
+                    }
+                });
             }
         });
     }
