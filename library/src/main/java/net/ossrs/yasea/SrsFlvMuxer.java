@@ -719,7 +719,6 @@ public class SrsFlvMuxer {
         }
 
         public void reset() {
-            Log.i(TAG, "SrsFlvMuxer reset enter");
             h264_sps_changed = false;
             h264_pps_changed = false;
             h264_sps_pps_sent = false;
