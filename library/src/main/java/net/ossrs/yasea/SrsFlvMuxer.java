@@ -132,10 +132,11 @@ public class SrsFlvMuxer {
             @Override
             public void run() {
                 if (!connect(rtmpUrl)) {
+                    started = false;
                     return;
                 }
 
-                while (!Thread.interrupted()) {
+                while (started) {
                     while (!mFlvTagCache.isEmpty()) {
                         SrsFlvFrame frame = mFlvTagCache.poll();
                         if (frame.isSequenceHeader()) {
@@ -176,10 +177,10 @@ public class SrsFlvMuxer {
         started = false;
         mFlvTagCache.clear();
         if (worker != null) {
-            worker.interrupt();
             try {
-                worker.join();
-            } catch (InterruptedException e) {
+                worker.interrupt();
+                worker.join(200);
+            } catch (Exception e) {
                 e.printStackTrace();
                 worker.interrupt();
             }
@@ -718,6 +719,7 @@ public class SrsFlvMuxer {
         }
 
         public void reset() {
+            Log.i(TAG, "SrsFlvMuxer reset enter");
             h264_sps_changed = false;
             h264_pps_changed = false;
             h264_sps_pps_sent = false;
