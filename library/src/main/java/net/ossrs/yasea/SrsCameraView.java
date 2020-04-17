@@ -90,8 +90,8 @@ public class SrsCameraView extends GLSurfaceView implements GLSurfaceView.Render
         GLES20.glViewport(0, 0, width, height);
         mSurfaceWidth = width;
         mSurfaceHeight = height;
-        magicFilter.onDisplaySizeChanged(width, height);
         magicFilter.onInputSizeChanged(mPreviewWidth, mPreviewHeight);
+        magicFilter.onDisplaySizeChanged(width, height);
 
         mOutputAspectRatio = width > height ? (float) width / height : (float) height / width;
         float aspectRatio = mOutputAspectRatio / mInputAspectRatio;
@@ -227,6 +227,29 @@ public class SrsCameraView extends GLSurfaceView implements GLSurfaceView.Render
         });
         requestRender();
         return true;
+    }
+
+    public boolean setFilter(final GPUImageFilter filter) {
+        queueEvent(new Runnable() {
+            @Override
+            public void run() {
+                if (magicFilter != null) {
+                    magicFilter.destroy();
+                }
+                magicFilter = filter;
+                if (magicFilter != null) {
+                    magicFilter.init(getContext());
+                    magicFilter.onInputSizeChanged(mPreviewWidth, mPreviewHeight);
+                    magicFilter.onDisplaySizeChanged(mSurfaceWidth, mSurfaceHeight);
+                }
+            }
+        });
+        requestRender();
+        return true;
+    }
+
+    public synchronized GPUImageFilter getMagicFilter() {
+        return magicFilter;
     }
 
     private void deleteTextures() {

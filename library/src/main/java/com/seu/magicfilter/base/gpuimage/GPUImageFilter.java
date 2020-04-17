@@ -99,7 +99,7 @@ public class GPUImageFilter {
 
     private int mGLProgId;
     private int mGLPositionIndex;
-    private int mGLInputImageTextureIndex;
+    protected int mGLInputImageTextureIndex;
     private int mGLTextureCoordinateIndex;
     private int mGLTextureTransformIndex;
 
@@ -224,13 +224,20 @@ public class GPUImageFilter {
     }
 
     private void initFboTexture(int width, int height) {
+        if (width == 0 || height == 0) {
+            return;
+        }
         if (mGLFboId != null && (mInputWidth != width || mInputHeight != height)) {
             destroyFboTexture();
         }
 
+        if (mGLFboBuffer != null) {
+            return;
+        }
+        mGLFboBuffer = IntBuffer.allocate(width * height);
+
         mGLFboId = new int[1];
         mGLFboTexId = new int[1];
-        mGLFboBuffer = IntBuffer.allocate(width * height);
 
         GLES20.glGenFramebuffers(1, mGLFboId, 0);
         GLES20.glGenTextures(1, mGLFboTexId, 0);
@@ -255,6 +262,7 @@ public class GPUImageFilter {
             GLES20.glDeleteFramebuffers(1, mGLFboId, 0);
             mGLFboId = null;
         }
+        mGLFboBuffer = null;
     }
 
     public int onDrawFrame(final int textureId, final FloatBuffer cubeBuffer, final FloatBuffer textureBuffer) {
