@@ -561,6 +561,8 @@ public class RtmpConnection implements RtmpPublisher {
                         case COMMAND_AMF0:
                             handleRxInvoke((Command) rtmpPacket);
                             break;
+                        case ACKNOWLEDGEMENT:
+                            break;
                         default:
                             Log.w(TAG, "handleRxPacketLoop(): Not handling unimplemented/unknown packet of type: " + rtmpPacket.getHeader().getMessageType());
                             break;
