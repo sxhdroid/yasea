@@ -15,6 +15,7 @@ import android.widget.Button;
 import android.widget.Toast;
 
 import com.github.faucamp.simplertmp.RtmpHandler;
+import com.seu.magicfilter.base.gpuimage.GPUWaterMarkFilter;
 import com.seu.magicfilter.utils.MagicFilterType;
 
 import net.ossrs.yasea.SrsCameraView;
@@ -83,7 +84,7 @@ public class MainActivity extends AppCompatActivity implements RtmpHandler.RtmpL
                         camera2Manager = new Camera2Manager(MainActivity.this);
                         camera2Manager.setPreviewView(mCameraView);
                         camera2Manager.openCamera(1920, 1080);
-                        mCameraView.setWaterMark(BitmapFactory.decodeResource(getResources(), R.drawable.ic_launcher));
+                        mCameraView.setWaterMark(BitmapFactory.decodeResource(getResources(), R.drawable.ic_launcher), GPUWaterMarkFilter.Location.LOCALTION_RIGHT_BOTTOM);
                     }
                 });
             }
@@ -311,7 +312,6 @@ public class MainActivity extends AppCompatActivity implements RtmpHandler.RtmpL
         if (btnPublish.getText().toString().contentEquals("stop")) {
             mPublisher.startEncode();
         }
-//        mPublisher.startCamera();
     }
 
     private static String getRandomAlphaString(int length) {

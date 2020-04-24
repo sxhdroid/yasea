@@ -4,6 +4,7 @@ import android.content.Context;
 import android.graphics.Bitmap;
 import android.opengl.GLES11Ext;
 import android.opengl.GLES20;
+import android.support.annotation.IntRange;
 
 import com.seu.magicfilter.utils.OpenGLUtils;
 
@@ -19,6 +20,24 @@ import java.nio.FloatBuffer;
  * @author apple
  */
 public class GPUWaterMarkFilter extends GPUImageFilter {
+
+    /**
+     * 水印显示位置
+     */
+    public interface Location {
+        /**位置居中*/
+        int LOCATION_CENTER = 0;
+        /** 位置左上 */
+        int LOCALTION_LEFT_TOP = LOCATION_CENTER + 1;
+        /** 位置左下 */
+        int LOCALTION_LEFT_BOTTOM = LOCATION_CENTER + 2;
+        /** 位置右上 */
+        int LOCALTION_RIGHT_TOP = LOCATION_CENTER + 3;
+        /** 位置右下 */
+        int LOCALTION_RIGHT_BOTTOM = LOCATION_CENTER + 4;
+        /**  位置自定义 */
+        int LOCATION_CUSTOM = LOCATION_CENTER + 5;
+    }
 
     private final float TEX_COORD[] = {
             // Bottom left.
@@ -49,6 +68,8 @@ public class GPUWaterMarkFilter extends GPUImageFilter {
 
     private boolean mIsInitialized;
 
+    private int mLocation;
+
     @Override
     public void init(Context context) {
         super.init(context);
@@ -70,6 +91,35 @@ public class GPUWaterMarkFilter extends GPUImageFilter {
         mGLWaterMarkPositionIndex = GLES20.glGetAttribLocation(mGLWaterMarkProgId, "position");
         mGLWaterMarkTextureCoordinateIndex = GLES20.glGetAttribLocation(mGLWaterMarkProgId,"inputTextureCoordinate");
         mGLWaterMarkInputImageTextureIndex = GLES20.glGetUniformLocation(mGLWaterMarkProgId, "inputImageTexture");
+    }
+
+    @Override
+    public void onDisplaySizeChanged(int width, int height) {
+        super.onDisplaySizeChanged(width, height);
+        switch (mLocation) {
+            case Location.LOCALTION_LEFT_TOP:
+                x = 0;
+                y = height - mBitmapHeight;
+                break;
+            case Location.LOCALTION_LEFT_BOTTOM:
+                x = 0;
+                y = 0;
+                break;
+            case Location.LOCALTION_RIGHT_TOP:
+                x = width - mBitmapWidth;
+                y = height - mBitmapHeight;
+                break;
+            case Location.LOCALTION_RIGHT_BOTTOM:
+                x = width - mBitmapWidth;
+                y = 0;
+                break;
+            case Location.LOCATION_CENTER:
+                x = width / 2 - mBitmapWidth / 2;
+                y = height / 2 - mBitmapWidth / 2;
+                break;
+            default:
+                break;
+        }
     }
 
     @Override
@@ -166,6 +216,7 @@ public class GPUWaterMarkFilter extends GPUImageFilter {
     }
 
     public void setPosition(int x, int y, int width, int height) {
+        mLocation = Location.LOCATION_CUSTOM;
         this.x = x;
         this.y = y;
         this.w = width;
@@ -190,5 +241,14 @@ public class GPUWaterMarkFilter extends GPUImageFilter {
                 mTexturesId = OpenGLUtils.loadTexture(mBitmap, OpenGLUtils.NO_TEXTURE, false);
             }
         });
+    }
+
+    /**
+     * 指定设置显示的几个默认位置之一
+     *
+     * @param mLocation {@link Location}
+     */
+    public void setLocation(@IntRange(from = Location.LOCATION_CENTER, to = Location.LOCALTION_RIGHT_BOTTOM) int mLocation) {
+        this.mLocation = mLocation;
     }
 }

@@ -6,6 +6,7 @@ import android.graphics.SurfaceTexture;
 import android.opengl.GLES20;
 import android.opengl.GLSurfaceView;
 import android.opengl.Matrix;
+import android.support.annotation.IntRange;
 import android.util.AttributeSet;
 
 import com.seu.magicfilter.base.gpuimage.GPUImageFilter;
@@ -259,7 +260,23 @@ public class SrsCameraView extends GLSurfaceView implements GLSurfaceView.Render
         if (bitmap == null) {
             return;
         }
-        setWaterMark(bitmap, mPreviewWidth / 2 - bitmap.getWidth() / 2, mPreviewHeight / 2 - bitmap.getHeight() / 2);
+        setWaterMark(bitmap, GPUWaterMarkFilter.Location.LOCATION_CENTER);
+    }
+
+    /**
+     * 默认居中显示水印
+     *
+     * @param bitmap 水印图片
+     * @param location {@link com.seu.magicfilter.base.gpuimage.GPUWaterMarkFilter.Location}
+     */
+    public void setWaterMark(Bitmap bitmap, @IntRange(from = GPUWaterMarkFilter.Location.LOCATION_CENTER, to = GPUWaterMarkFilter.Location.LOCALTION_RIGHT_BOTTOM) int location) {
+        if (bitmap == null) {
+            return;
+        }
+        GPUWaterMarkFilter filter = new GPUWaterMarkFilter();
+        filter.setLocation(location);
+        filter.setBitmap(bitmap);
+        setFilter(filter);
     }
 
     /**
@@ -274,7 +291,7 @@ public class SrsCameraView extends GLSurfaceView implements GLSurfaceView.Render
             return;
         }
         GPUWaterMarkFilter filter = new GPUWaterMarkFilter();
-        filter.setPosition(mPreviewWidth / 2 - bitmap.getWidth() / 2, mPreviewHeight / 2 - bitmap.getHeight() / 2, 0, 0);
+        filter.setPosition(x, y, 0, 0);
         filter.setBitmap(bitmap);
         setFilter(filter);
     }
