@@ -1,6 +1,7 @@
 package net.ossrs.yasea;
 
 import android.content.Context;
+import android.graphics.Bitmap;
 import android.graphics.SurfaceTexture;
 import android.opengl.GLES20;
 import android.opengl.GLSurfaceView;
@@ -8,6 +9,7 @@ import android.opengl.Matrix;
 import android.util.AttributeSet;
 
 import com.seu.magicfilter.base.gpuimage.GPUImageFilter;
+import com.seu.magicfilter.base.gpuimage.GPUWaterMarkFilter;
 import com.seu.magicfilter.utils.MagicFilterFactory;
 import com.seu.magicfilter.utils.MagicFilterType;
 import com.seu.magicfilter.utils.OpenGLUtils;
@@ -247,6 +249,37 @@ public class SrsCameraView extends GLSurfaceView implements GLSurfaceView.Render
         requestRender();
         return true;
     }
+
+    /**
+     * 默认居中显示水印
+     *
+     * @param bitmap 水印图片
+     */
+    public void setWaterMark(Bitmap bitmap) {
+        if (bitmap == null) {
+            return;
+        }
+        setWaterMark(bitmap, mPreviewWidth / 2 - bitmap.getWidth() / 2, mPreviewHeight / 2 - bitmap.getHeight() / 2);
+    }
+
+    /**
+     * 默认居中显示水印
+     *
+     * @param bitmap 水印图片
+     * @param x x轴位置
+     * @param y y轴位置
+     */
+    public void setWaterMark(Bitmap bitmap, int x, int y) {
+        if (bitmap == null) {
+            return;
+        }
+        GPUWaterMarkFilter filter = new GPUWaterMarkFilter();
+        filter.setPosition(mPreviewWidth / 2 - bitmap.getWidth() / 2, mPreviewHeight / 2 - bitmap.getHeight() / 2, 0, 0);
+        filter.setBitmap(bitmap);
+        setFilter(filter);
+    }
+
+
 
     public synchronized GPUImageFilter getMagicFilter() {
         return magicFilter;

@@ -15,7 +15,6 @@ import android.widget.Button;
 import android.widget.Toast;
 
 import com.github.faucamp.simplertmp.RtmpHandler;
-import com.seu.magicfilter.base.gpuimage.GPUWaterMarkFilter;
 import com.seu.magicfilter.utils.MagicFilterType;
 
 import net.ossrs.yasea.SrsCameraView;
@@ -84,10 +83,7 @@ public class MainActivity extends AppCompatActivity implements RtmpHandler.RtmpL
                         camera2Manager = new Camera2Manager(MainActivity.this);
                         camera2Manager.setPreviewView(mCameraView);
                         camera2Manager.openCamera(1920, 1080);
-                        GPUWaterMarkFilter filter = new GPUWaterMarkFilter();
-                        filter.setPosition(400, 400, 0, 0);
-                        filter.setBitmap(BitmapFactory.decodeResource(getResources(), R.drawable.ic_launcher));
-                        mCameraView.setFilter(filter);
+                        mCameraView.setWaterMark(BitmapFactory.decodeResource(getResources(), R.drawable.ic_launcher));
                     }
                 });
             }
