@@ -2,11 +2,11 @@ package com.seu.magicfilter.advanced;
 
 import android.opengl.GLES20;
 
-import com.seu.magicfilter.utils.MagicFilterType;
-import net.ossrs.yasea.R;
-
 import com.seu.magicfilter.base.gpuimage.GPUImageFilter;
+import com.seu.magicfilter.utils.MagicFilterType;
 import com.seu.magicfilter.utils.OpenGLUtils;
+
+import net.ossrs.yasea.R;
 
 public class MagicSutroFilter extends GPUImageFilter{
     private int[] inputTextureHandles = {-1,-1,-1,-1,-1};
@@ -26,6 +26,7 @@ public class MagicSutroFilter extends GPUImageFilter{
         }
     }
     
+    @Override
     protected void onDrawArraysAfter(){
         for(int i = 0; i < inputTextureHandles.length && inputTextureHandles[i] != OpenGLUtils.NO_TEXTURE; i++){
             GLES20.glActiveTexture(GLES20.GL_TEXTURE0 + (i+3));
@@ -57,6 +58,7 @@ public class MagicSutroFilter extends GPUImageFilter{
         super.onInitialized();
         setFloat(mGLStrengthLocation, 1.0f);
         runOnDraw(new Runnable(){
+            @Override
             public void run(){
                 inputTextureHandles[0] = OpenGLUtils.loadTexture(getContext(), "filter/vignette_map.png");
                 inputTextureHandles[1] = OpenGLUtils.loadTexture(getContext(), "filter/sutrometal.png");

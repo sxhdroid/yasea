@@ -1,14 +1,14 @@
 package com.seu.magicfilter.base;
 
 
-import java.nio.FloatBuffer;
-import java.util.List;
+import android.content.Context;
+import android.opengl.GLES20;
 
 import com.seu.magicfilter.base.gpuimage.GPUImageFilter;
 import com.seu.magicfilter.utils.OpenGLUtils;
 
-import android.content.Context;
-import android.opengl.GLES20;
+import java.nio.FloatBuffer;
+import java.util.List;
 
 
 public class MagicBaseGroupFilter extends GPUImageFilter {
@@ -105,6 +105,7 @@ public class MagicBaseGroupFilter extends GPUImageFilter {
         return OpenGLUtils.ON_DRAWN;
     }
 
+    @Override
     public int onDrawFrame(int textureId) {
         if (frameBuffers == null || frameBufferTextures == null) {
             return OpenGLUtils.NOT_INIT;

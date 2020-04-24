@@ -3,7 +3,6 @@ package com.seu.magicfilter.base;
 import android.opengl.GLES20;
 
 import com.seu.magicfilter.base.gpuimage.GPUImageFilter;
-import com.seu.magicfilter.utils.MagicFilterFactory;
 import com.seu.magicfilter.utils.MagicFilterType;
 import com.seu.magicfilter.utils.OpenGLUtils;
 
@@ -21,20 +20,24 @@ public class MagicLookupFilter extends GPUImageFilter {
     private int mLookupTextureUniform;
     private int mLookupSourceTexture = OpenGLUtils.NO_TEXTURE;
 
+    @Override
     protected void onInit() {
         super.onInit();
         mLookupTextureUniform = GLES20.glGetUniformLocation(getProgram(), "inputImageTexture2");
     }
 
+    @Override
     protected void onInitialized() {
         super.onInitialized();
         runOnDraw(new Runnable() {
+            @Override
             public void run() {
                 mLookupSourceTexture = OpenGLUtils.loadTexture(getContext(), table);
             }
         });
     }
 
+    @Override
     protected void onDestroy() {
         super.onDestroy();
         int[] texture = new int[]{mLookupSourceTexture};
@@ -42,6 +45,7 @@ public class MagicLookupFilter extends GPUImageFilter {
         mLookupSourceTexture = -1;
     }
 
+    @Override
     protected void onDrawArraysAfter() {
         if (mLookupSourceTexture != -1) {
             GLES20.glActiveTexture(GLES20.GL_TEXTURE3);
@@ -50,6 +54,7 @@ public class MagicLookupFilter extends GPUImageFilter {
         }
     }
 
+    @Override
     protected void onDrawArraysPre() {
         if (mLookupSourceTexture != -1) {
             GLES20.glActiveTexture(GLES20.GL_TEXTURE3);
