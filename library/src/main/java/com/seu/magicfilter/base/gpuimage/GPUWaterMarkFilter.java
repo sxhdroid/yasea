@@ -39,18 +39,6 @@ public class GPUWaterMarkFilter extends GPUImageFilter {
         int LOCATION_CUSTOM = LOCATION_CENTER + 5;
     }
 
-    /** 旋转180°*/
-    private final float TEX_COORD_ROTATION_180[] = {
-            // Bottom left.
-            1.0f, 1.0f,
-            // Bottom right.
-            0.0f, 1.0f,
-            // Top left.
-            1.0f, 0.0f,
-            // Top right.
-            0.0f, 0.0f
-    };
-
     private int mGLWaterMarkProgId;
     private int mGLWaterMarkPositionIndex;
     private int mGLWaterMarkInputImageTextureIndex;
@@ -87,9 +75,9 @@ public class GPUWaterMarkFilter extends GPUImageFilter {
     @Override
     protected void onInitialized() {
         super.onInitialized();
-        mWaterMarkTexBuffer = ByteBuffer.allocateDirect(TEX_COORD_ROTATION_180.length * 4)
+        mWaterMarkTexBuffer = ByteBuffer.allocateDirect(TEX_COORD_ROTATION_0.length * 4)
                 .order(ByteOrder.nativeOrder()).asFloatBuffer();
-        mWaterMarkTexBuffer.put(TEX_COORD_ROTATION_180).position(0);
+        mWaterMarkTexBuffer.put(TEX_COORD_ROTATION_0).position(0);
         mScreenTexBuffer = ByteBuffer.allocateDirect(TEX_COORD_ROTATION_0.length * 4)
                 .order(ByteOrder.nativeOrder()).asFloatBuffer();
         mScreenTexBuffer.put(TEX_COORD_ROTATION_0).position(0);
@@ -105,7 +93,7 @@ public class GPUWaterMarkFilter extends GPUImageFilter {
     }
 
     private void loadWaterMarkSamplerShader() {
-        mGLWaterMarkProgId = OpenGLUtils.loadProgram(OpenGLUtils.readShaderFromRawResource(getContext(), R.raw.base_2d_vertex),
+        mGLWaterMarkProgId = OpenGLUtils.loadProgram(OpenGLUtils.readShaderFromRawResource(getContext(), R.raw.watermark_vertex),
                 OpenGLUtils.readShaderFromRawResource(getContext(), R.raw.base_2d_fragment));
         mGLWaterMarkPositionIndex = GLES20.glGetAttribLocation(mGLWaterMarkProgId, "position");
         mGLWaterMarkTextureCoordinateIndex = GLES20.glGetAttribLocation(mGLWaterMarkProgId,"inputTextureCoordinate");
