@@ -84,7 +84,7 @@ public class MainActivity extends AppCompatActivity implements RtmpHandler.RtmpL
                         camera2Manager = new Camera2Manager(MainActivity.this);
                         camera2Manager.setPreviewView(mCameraView);
                         camera2Manager.openCamera(1920, 1080);
-                        mCameraView.setWaterMark(BitmapFactory.decodeResource(getResources(), R.drawable.ic_launcher), GPUWaterMarkFilter.Location.LOCALTION_RIGHT_BOTTOM);
+                        mCameraView.setWaterMark(BitmapFactory.decodeResource(getResources(), R.drawable.ic_launcher), GPUWaterMarkFilter.Location.LOCATION_CENTER);
                     }
                 });
             }

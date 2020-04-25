@@ -39,7 +39,8 @@ public class GPUWaterMarkFilter extends GPUImageFilter {
         int LOCATION_CUSTOM = LOCATION_CENTER + 5;
     }
 
-    private final float TEX_COORD[] = {
+    /** 旋转180°*/
+    private final float TEX_COORD_ROTATION_180[] = {
             // Bottom left.
             1.0f, 1.0f,
             // Bottom right.
@@ -55,7 +56,13 @@ public class GPUWaterMarkFilter extends GPUImageFilter {
     private int mGLWaterMarkInputImageTextureIndex;
     private int mGLWaterMarkTextureCoordinateIndex;
 
-    private FloatBuffer mTextureBuffer;
+    private int mGLScreenProgId;
+    private int mGLScreenPositionIndex;
+    private int mGLScreenInputImageTextureIndex;
+    private int mGLScreenTextureCoordinateIndex;
+
+    private FloatBuffer mWaterMarkTexBuffer;
+    private FloatBuffer mScreenTexBuffer;
 
     /**水印的放置位置和宽高*/
     private int x, y, w, h;
@@ -74,15 +81,27 @@ public class GPUWaterMarkFilter extends GPUImageFilter {
     public void init(Context context) {
         super.init(context);
         loadWaterMarkSamplerShader();
+        loadInternalSamplerShader();
     }
 
     @Override
     protected void onInitialized() {
         super.onInitialized();
-        mTextureBuffer = ByteBuffer.allocateDirect(TEX_COORD.length * 4)
+        mWaterMarkTexBuffer = ByteBuffer.allocateDirect(TEX_COORD_ROTATION_180.length * 4)
                 .order(ByteOrder.nativeOrder()).asFloatBuffer();
-        mTextureBuffer.put(TEX_COORD).position(0);
+        mWaterMarkTexBuffer.put(TEX_COORD_ROTATION_180).position(0);
+        mScreenTexBuffer = ByteBuffer.allocateDirect(TEX_COORD_ROTATION_0.length * 4)
+                .order(ByteOrder.nativeOrder()).asFloatBuffer();
+        mScreenTexBuffer.put(TEX_COORD_ROTATION_0).position(0);
         mIsInitialized = true;
+    }
+
+    private void loadInternalSamplerShader() {
+        mGLScreenProgId = OpenGLUtils.loadProgram(OpenGLUtils.readShaderFromRawResource(getContext(), R.raw.base_2d_vertex),
+                OpenGLUtils.readShaderFromRawResource(getContext(), R.raw.base_2d_fragment));
+        mGLScreenPositionIndex = GLES20.glGetAttribLocation(mGLScreenProgId, "position");
+        mGLScreenTextureCoordinateIndex = GLES20.glGetAttribLocation(mGLScreenProgId,"inputTextureCoordinate");
+        mGLScreenInputImageTextureIndex = GLES20.glGetUniformLocation(mGLScreenProgId, "inputImageTexture");
     }
 
     private void loadWaterMarkSamplerShader() {
@@ -94,8 +113,8 @@ public class GPUWaterMarkFilter extends GPUImageFilter {
     }
 
     @Override
-    public void onDisplaySizeChanged(int width, int height) {
-        super.onDisplaySizeChanged(width, height);
+    public void onInputSizeChanged(int width, int height) {
+        super.onInputSizeChanged(width, height);
         switch (mLocation) {
             case Location.LOCALTION_LEFT_TOP:
                 x = 0;
@@ -115,7 +134,7 @@ public class GPUWaterMarkFilter extends GPUImageFilter {
                 break;
             case Location.LOCATION_CENTER:
                 x = width / 2 - mBitmapWidth / 2;
-                y = height / 2 - mBitmapWidth / 2;
+                y = height / 2 - mBitmapHeight / 2;
                 break;
             default:
                 break;
@@ -124,24 +143,46 @@ public class GPUWaterMarkFilter extends GPUImageFilter {
 
     @Override
     public int onDrawFrame(int cameraTextureId) {
+        if (!mIsInitialized) {
+            return OpenGLUtils.NOT_INIT;
+        }
+        if (mGLFboId == null) {
+            return OpenGLUtils.NO_TEXTURE;
+        }
+        runPendingOnDrawTasks();
         int fboId = drawToFboTexture(cameraTextureId);
         drawOverlay();
         drawToScreen(fboId);
         return OpenGLUtils.ON_DRAWN;
     }
 
-    @Override
-    protected int drawToFboTexture(int textureId) {
-        if (!mIsInitialized) {
-            return OpenGLUtils.NOT_INIT;
-        }
+    private int drawToScreen(int textureId) {
+        GLES20.glUseProgram(mGLScreenProgId);
 
-        if (mGLFboId == null) {
-            return OpenGLUtils.NO_TEXTURE;
-        }
+        GLES20.glEnableVertexAttribArray(mGLScreenPositionIndex);
+        GLES20.glVertexAttribPointer(mGLScreenPositionIndex, 2, GLES20.GL_FLOAT, false, 4 * 2, mGLCubeBuffer);
 
+        GLES20.glEnableVertexAttribArray(mGLScreenTextureCoordinateIndex);
+        GLES20.glVertexAttribPointer(mGLScreenTextureCoordinateIndex, 2, GLES20.GL_FLOAT, false, 4 * 2, mScreenTexBuffer);
+
+        GLES20.glActiveTexture(GLES20.GL_TEXTURE0);
+        GLES20.glBindTexture(GLES20.GL_TEXTURE_2D, textureId);
+        GLES20.glUniform1i(mGLScreenInputImageTextureIndex, 0);
+
+        GLES20.glDrawArrays(GLES20.GL_TRIANGLE_STRIP, 0, 4);
+
+        GLES20.glBindTexture(GLES20.GL_TEXTURE_2D, 0);
+
+        GLES20.glDisableVertexAttribArray(mGLScreenPositionIndex);
+        GLES20.glDisableVertexAttribArray(mGLScreenTextureCoordinateIndex);
+
+        GLES20.glBindBuffer(GLES20.GL_ARRAY_BUFFER, 0);
+
+        return OpenGLUtils.ON_DRAWN;
+    }
+
+    private int drawToFboTexture(int textureId) {
         GLES20.glUseProgram(mGLProgId);
-        runPendingOnDrawTasks();
 
         GLES20.glBindBuffer(GLES20.GL_ARRAY_BUFFER, mGLCubeId[0]);
         GLES20.glEnableVertexAttribArray(mGLPositionIndex);
@@ -157,27 +198,26 @@ public class GPUWaterMarkFilter extends GPUImageFilter {
         GLES20.glBindTexture(GLES11Ext.GL_TEXTURE_EXTERNAL_OES, textureId);
         GLES20.glUniform1i(mGLInputImageTextureIndex, 0);
 
-        onDrawArraysPre();
-
         GLES20.glViewport(0, 0, mInputWidth, mInputHeight);
         GLES20.glBindFramebuffer(GLES20.GL_FRAMEBUFFER, mGLFboId[0]);
         GLES20.glDrawArrays(GLES20.GL_TRIANGLE_STRIP, 0, 4);
         GLES20.glBindFramebuffer(GLES20.GL_FRAMEBUFFER, 0);
         GLES20.glViewport(0, 0, mOutputWidth, mOutputHeight);
 
-        onDrawArraysAfter();
-
         GLES20.glBindTexture(GLES11Ext.GL_TEXTURE_EXTERNAL_OES, 0);
 
         GLES20.glDisableVertexAttribArray(mGLPositionIndex);
         GLES20.glDisableVertexAttribArray(mGLTextureCoordinateIndex);
         GLES20.glBindBuffer(GLES20.GL_ARRAY_BUFFER, 0);
+
         return mGLFboTexId[0];
     }
 
     @Override
     public void onDestroy() {
         super.onDestroy();
+        GLES20.glDeleteProgram(mGLWaterMarkProgId);
+        GLES20.glDeleteProgram(mGLScreenProgId);
         GLES20.glDeleteTextures(1, new int[]{mTexturesId}, 0);
         mTexturesId = OpenGLUtils.NO_TEXTURE;
     }
@@ -196,7 +236,7 @@ public class GPUWaterMarkFilter extends GPUImageFilter {
         GLES20.glVertexAttribPointer(mGLWaterMarkPositionIndex, 2, GLES20.GL_FLOAT, false, 4 * 2, mGLCubeBuffer);
 
         GLES20.glEnableVertexAttribArray(mGLWaterMarkTextureCoordinateIndex);
-        GLES20.glVertexAttribPointer(mGLWaterMarkTextureCoordinateIndex, 2, GLES20.GL_FLOAT, false, 4 * 2, mTextureBuffer);
+        GLES20.glVertexAttribPointer(mGLWaterMarkTextureCoordinateIndex, 2, GLES20.GL_FLOAT, false, 4 * 2, mWaterMarkTexBuffer);
 
         GLES20.glActiveTexture(GLES20.GL_TEXTURE1);
         GLES20.glBindTexture(GLES20.GL_TEXTURE_2D, mTexturesId);
