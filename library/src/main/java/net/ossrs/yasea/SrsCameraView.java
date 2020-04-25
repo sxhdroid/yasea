@@ -269,7 +269,7 @@ public class SrsCameraView extends GLSurfaceView implements GLSurfaceView.Render
      * @param bitmap 水印图片
      * @param location {@link com.seu.magicfilter.base.gpuimage.GPUWaterMarkFilter.Location}
      */
-    public void setWaterMark(Bitmap bitmap, @IntRange(from = GPUWaterMarkFilter.Location.LOCATION_CENTER, to = GPUWaterMarkFilter.Location.LOCALTION_RIGHT_BOTTOM) int location) {
+    public void setWaterMark(Bitmap bitmap, @IntRange(from = GPUWaterMarkFilter.Location.LOCATION_CENTER, to = GPUWaterMarkFilter.Location.LOCATION_RIGHT_BOTTOM) int location) {
         if (bitmap == null) {
             return;
         }

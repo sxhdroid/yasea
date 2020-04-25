@@ -28,13 +28,13 @@ public class GPUWaterMarkFilter extends GPUImageFilter {
         /**位置居中*/
         int LOCATION_CENTER = 0;
         /** 位置左上 */
-        int LOCALTION_LEFT_TOP = LOCATION_CENTER + 1;
+        int LOCATION_LEFT_TOP = LOCATION_CENTER + 1;
         /** 位置左下 */
-        int LOCALTION_LEFT_BOTTOM = LOCATION_CENTER + 2;
+        int LOCATION_LEFT_BOTTOM = LOCATION_CENTER + 2;
         /** 位置右上 */
-        int LOCALTION_RIGHT_TOP = LOCATION_CENTER + 3;
+        int LOCATION_RIGHT_TOP = LOCATION_CENTER + 3;
         /** 位置右下 */
-        int LOCALTION_RIGHT_BOTTOM = LOCATION_CENTER + 4;
+        int LOCATION_RIGHT_BOTTOM = LOCATION_CENTER + 4;
         /**  位置自定义 */
         int LOCATION_CUSTOM = LOCATION_CENTER + 5;
     }
@@ -103,22 +103,23 @@ public class GPUWaterMarkFilter extends GPUImageFilter {
     @Override
     public void onInputSizeChanged(int width, int height) {
         super.onInputSizeChanged(width, height);
+        int offset = 20;
         switch (mLocation) {
-            case Location.LOCALTION_LEFT_TOP:
-                x = 0;
-                y = height - mBitmapHeight;
+            case Location.LOCATION_LEFT_TOP:
+                x = offset;
+                y = height - mBitmapHeight - offset;
                 break;
-            case Location.LOCALTION_LEFT_BOTTOM:
-                x = 0;
-                y = 0;
+            case Location.LOCATION_LEFT_BOTTOM:
+                x = offset;
+                y = offset;
                 break;
-            case Location.LOCALTION_RIGHT_TOP:
-                x = width - mBitmapWidth;
-                y = height - mBitmapHeight;
+            case Location.LOCATION_RIGHT_TOP:
+                x = width - mBitmapWidth - offset;
+                y = height - mBitmapHeight - offset;
                 break;
-            case Location.LOCALTION_RIGHT_BOTTOM:
-                x = width - mBitmapWidth;
-                y = 0;
+            case Location.LOCATION_RIGHT_BOTTOM:
+                x = width - mBitmapWidth - offset;
+                y = offset;
                 break;
             case Location.LOCATION_CENTER:
                 x = width / 2 - mBitmapWidth / 2;
@@ -243,6 +244,13 @@ public class GPUWaterMarkFilter extends GPUImageFilter {
         GLES20.glViewport(0, 0, mOutputWidth, mOutputHeight);
     }
 
+    /**
+     * 设置水印显示位置
+     * @param x X轴位置
+     * @param y Y轴位置
+     * @param width 水印宽
+     * @param height 水印高
+     */
     public void setPosition(int x, int y, int width, int height) {
         mLocation = Location.LOCATION_CUSTOM;
         this.x = x;
@@ -276,7 +284,7 @@ public class GPUWaterMarkFilter extends GPUImageFilter {
      *
      * @param mLocation {@link Location}
      */
-    public void setLocation(@IntRange(from = Location.LOCATION_CENTER, to = Location.LOCALTION_RIGHT_BOTTOM) int mLocation) {
+    public void setLocation(@IntRange(from = Location.LOCATION_CENTER, to = Location.LOCATION_RIGHT_BOTTOM) int mLocation) {
         this.mLocation = mLocation;
     }
 }
