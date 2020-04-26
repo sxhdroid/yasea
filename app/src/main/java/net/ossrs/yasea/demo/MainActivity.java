@@ -1,10 +1,16 @@
 package net.ossrs.yasea.demo;
 
+import android.Manifest;
 import android.content.SharedPreferences;
+import android.content.pm.ActivityInfo;
+import android.content.pm.PackageManager;
 import android.content.res.Configuration;
-import android.graphics.BitmapFactory;
+import android.hardware.Camera;
+import android.os.Build;
 import android.os.Bundle;
 import android.os.Environment;
+import android.support.v4.app.ActivityCompat;
+import android.support.v4.content.ContextCompat;
 import android.support.v7.app.AppCompatActivity;
 import android.util.Log;
 import android.view.Menu;
@@ -12,10 +18,10 @@ import android.view.MenuItem;
 import android.view.View;
 import android.view.WindowManager;
 import android.widget.Button;
+import android.widget.EditText;
 import android.widget.Toast;
 
 import com.github.faucamp.simplertmp.RtmpHandler;
-import com.seu.magicfilter.base.gpuimage.GPUWaterMarkFilter;
 import com.seu.magicfilter.utils.MagicFilterType;
 
 import net.ossrs.yasea.SrsCameraView;
@@ -23,16 +29,15 @@ import net.ossrs.yasea.SrsEncodeHandler;
 import net.ossrs.yasea.SrsPublisher;
 import net.ossrs.yasea.SrsRecordHandler;
 
-import java.io.File;
 import java.io.IOException;
 import java.net.SocketException;
-import java.nio.ByteBuffer;
 import java.util.Random;
 
 public class MainActivity extends AppCompatActivity implements RtmpHandler.RtmpListener,
                         SrsRecordHandler.SrsRecordListener, SrsEncodeHandler.SrsEncodeListener {
 
     private static final String TAG = "Yasea";
+    public final static int RC_CAMERA = 100;
 
     private Button btnPublish;
     private Button btnSwitchCamera;
@@ -41,14 +46,15 @@ public class MainActivity extends AppCompatActivity implements RtmpHandler.RtmpL
     private Button btnPause;
 
     private SharedPreferences sp;
-    private String rtmpUrl = "rtmp://192.168.0.254:1935/b2a0844ecddf339c/73";
-//        private String rtmpUrl = "rtmp://ossrs.net/" + getRandomAlphaString(3) + '/' + getRandomAlphaDigitString(5);
+    private String rtmpUrl = "rtmp://ossrs.net/" + getRandomAlphaString(3) + '/' + getRandomAlphaDigitString(5);
     private String recPath = Environment.getExternalStorageDirectory().getPath() + "/test.mp4";
 
     private SrsPublisher mPublisher;
     private SrsCameraView mCameraView;
 
-    private Camera2Manager camera2Manager;
+    private int mWidth = 640;
+    private int mHeight = 480;
+    private boolean isPermissionGranted = false;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -58,15 +64,51 @@ public class MainActivity extends AppCompatActivity implements RtmpHandler.RtmpL
         setContentView(R.layout.activity_main);
 
         // response screen rotation event
-//        setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_FULL_SENSOR);
+        setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_FULL_SENSOR);
 
+        requestPermission();
+    }
+
+    private void requestPermission() {
+        //1. 检查是否已经有该权限
+        if (Build.VERSION.SDK_INT >= 23 && (ContextCompat.checkSelfPermission(this, Manifest.permission.CAMERA)
+                != PackageManager.PERMISSION_GRANTED || ContextCompat.checkSelfPermission(this, Manifest.permission.RECORD_AUDIO)
+                != PackageManager.PERMISSION_GRANTED || ContextCompat.checkSelfPermission(this, Manifest.permission.WRITE_EXTERNAL_STORAGE)
+                != PackageManager.PERMISSION_GRANTED)) {
+            //2. 权限没有开启，请求权限
+            ActivityCompat.requestPermissions(this,
+                    new String[]{Manifest.permission.CAMERA, Manifest.permission.RECORD_AUDIO, Manifest.permission.WRITE_EXTERNAL_STORAGE}, RC_CAMERA);
+        }else{
+            //权限已经开启，做相应事情
+            isPermissionGranted = true;
+            init();
+        }
+    }
+
+    //3. 接收申请成功或者失败回调
+    @Override
+    public void onRequestPermissionsResult(int requestCode, String[] permissions, int[] grantResults) {
+        super.onRequestPermissionsResult(requestCode, permissions, grantResults);
+        if (requestCode == RC_CAMERA) {
+            if (grantResults.length > 0 && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
+                //权限被用户同意,做相应的事情
+                isPermissionGranted = true;
+                init();
+            } else {
+                //权限被用户拒绝，做相应的事情
+                finish();
+            }
+        }
+    }
+
+    private void init() {
         // restore data.
-//        sp = getSharedPreferences("Yasea", MODE_PRIVATE);
-//        rtmpUrl = sp.getString("rtmpUrl", rtmpUrl);
+        sp = getSharedPreferences("Yasea", MODE_PRIVATE);
+        rtmpUrl = sp.getString("rtmpUrl", rtmpUrl);
 
         // initialize url.
-//        final EditText efu = (EditText) findViewById(R.id.url);
-//        efu.setText(rtmpUrl);
+        final EditText efu = (EditText) findViewById(R.id.url);
+        efu.setText(rtmpUrl);
 
         btnPublish = (Button) findViewById(R.id.publish);
         btnSwitchCamera = (Button) findViewById(R.id.swCam);
@@ -74,42 +116,37 @@ public class MainActivity extends AppCompatActivity implements RtmpHandler.RtmpL
         btnSwitchEncoder = (Button) findViewById(R.id.swEnc);
         btnPause = (Button) findViewById(R.id.pause);
         btnPause.setEnabled(false);
-        mCameraView = findViewById(R.id.glsurfaceview_camera);
-        mCameraView.setSurfaceCreatedCallback(new SrsCameraView.SurfaceCreatedCallback() {
-            @Override
-            public void onSurfaceCreated() {
-                runOnUiThread(new Runnable() {
-                    @Override
-                    public void run() {
-                        camera2Manager = new Camera2Manager(MainActivity.this);
-                        camera2Manager.setPreviewView(mCameraView);
-                        camera2Manager.openCamera(1920, 1080);
-                        mCameraView.setWaterMark(BitmapFactory.decodeResource(getResources(), R.drawable.ic_launcher), GPUWaterMarkFilter.Location.LOCATION_CENTER);
-                    }
-                });
-            }
-        });
+        mCameraView = (SrsCameraView) findViewById(R.id.glsurfaceview_camera);
 
         mPublisher = new SrsPublisher(mCameraView);
         mPublisher.setEncodeHandler(new SrsEncodeHandler(this));
         mPublisher.setRtmpHandler(new RtmpHandler(this));
         mPublisher.setRecordHandler(new SrsRecordHandler(this));
-        mPublisher.setOutputResolution(1920, 1080);
-        mPublisher.setBitrate(12000 * 1000);
-//        mPublisher.setVideoHDMode();
-//        mPublisher.startCamera();
+        mPublisher.setPreviewResolution(mWidth, mHeight);
+        mPublisher.setOutputResolution(mHeight, mWidth); // 这里要和preview反过来
+        mPublisher.setVideoHDMode();
+        mPublisher.startCamera();
+
+        mCameraView.setCameraCallbacksHandler(new SrsCameraView.CameraCallbacksHandler(){
+            @Override
+            public void onCameraParameters(Camera.Parameters params) {
+                //params.setFocusMode("custom-focus");
+                //params.setWhiteBalance("custom-balance");
+                //etc...
+            }
+        });
 
         btnPublish.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
                 if (btnPublish.getText().toString().contentEquals("publish")) {
-//                    rtmpUrl = efu.getText().toString();
-//                    SharedPreferences.Editor editor = sp.edit();
-//                    editor.putString("rtmpUrl", rtmpUrl);
-//                    editor.apply();
+                    rtmpUrl = efu.getText().toString();
+                    SharedPreferences.Editor editor = sp.edit();
+                    editor.putString("rtmpUrl", rtmpUrl);
+                    editor.apply();
 
                     mPublisher.startPublish(rtmpUrl);
-//                    mPublisher.startCamera();
+                    mPublisher.startCamera();
 
                     if (btnSwitchEncoder.getText().toString().contentEquals("soft encoder")) {
                         Toast.makeText(getApplicationContext(), "Use hard encoder", Toast.LENGTH_SHORT).show();
@@ -145,7 +182,7 @@ public class MainActivity extends AppCompatActivity implements RtmpHandler.RtmpL
         btnSwitchCamera.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-//                mPublisher.switchCameraFace((mPublisher.getCameraId() + 1) % Camera.getNumberOfCameras());
+                mPublisher.switchCameraFace((mPublisher.getCameraId() + 1) % Camera.getNumberOfCameras());
             }
         });
 
@@ -153,13 +190,11 @@ public class MainActivity extends AppCompatActivity implements RtmpHandler.RtmpL
             @Override
             public void onClick(View v) {
                 if (btnRecord.getText().toString().contentEquals("record")) {
-                    mPublisher.startEncode();
                     if (mPublisher.startRecord(recPath)) {
                         btnRecord.setText("pause");
                     }
                 } else if (btnRecord.getText().toString().contentEquals("pause")) {
-                    mPublisher.stopEncode();
-                    mPublisher.stopRecord();
+                    mPublisher.pauseRecord();
                     btnRecord.setText("resume");
                 } else if (btnRecord.getText().toString().contentEquals("resume")) {
                     mPublisher.resumeRecord();
@@ -178,21 +213,6 @@ public class MainActivity extends AppCompatActivity implements RtmpHandler.RtmpL
                     mPublisher.switchToHardEncoder();
                     btnSwitchEncoder.setText("soft encoder");
                 }
-            }
-        });
-
-        findViewById(R.id.capture).setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                mPublisher.requestCaptureFrame(new SrsCameraView.CaptureFrameCallback() {
-                    @Override
-                    public void onCaptureFrame(byte[] data, int width, int height) {
-                        File path = Environment
-                                .getExternalStoragePublicDirectory(Environment.DIRECTORY_PICTURES);
-                        File file = new File(path,  "测试_" + System.currentTimeMillis() + ".jpg");
-                        BitmapUtils.saveBitmap(file.getAbsolutePath(), ByteBuffer.wrap(data), width, height);
-                    }
-                });
             }
         });
     }
@@ -272,26 +292,24 @@ public class MainActivity extends AppCompatActivity implements RtmpHandler.RtmpL
     @Override
     protected void onStart() {
         super.onStart();
-//        if(mPublisher.getCamera() == null){
-//            //if the camera was busy and available again
-//            mPublisher.startCamera();
-//        }
-    }                           
-                          
+        if(mPublisher.getCamera() == null && isPermissionGranted){
+            //if the camera was busy and available again
+            mPublisher.startCamera();
+        }
+    }
+
     @Override
     protected void onResume() {
         super.onResume();
         final Button btn = (Button) findViewById(R.id.publish);
         btn.setEnabled(true);
         mPublisher.resumeRecord();
-        mCameraView.onResume();
     }
 
     @Override
     protected void onPause() {
         super.onPause();
         mPublisher.pauseRecord();
-        mCameraView.onPause();
     }
 
     @Override
@@ -299,7 +317,6 @@ public class MainActivity extends AppCompatActivity implements RtmpHandler.RtmpL
         super.onDestroy();
         mPublisher.stopPublish();
         mPublisher.stopRecord();
-        camera2Manager.closeCamera();
     }
 
     @Override
@@ -312,6 +329,7 @@ public class MainActivity extends AppCompatActivity implements RtmpHandler.RtmpL
         if (btnPublish.getText().toString().contentEquals("stop")) {
             mPublisher.startEncode();
         }
+        mPublisher.startCamera();
     }
 
     private static String getRandomAlphaString(int length) {
@@ -381,27 +399,27 @@ public class MainActivity extends AppCompatActivity implements RtmpHandler.RtmpL
 
     @Override
     public void onRtmpVideoFpsChanged(double fps) {
-//        Log.i(TAG, String.format("Output Fps: %f", fps));
+        Log.i(TAG, String.format("Output Fps: %f", fps));
     }
 
     @Override
     public void onRtmpVideoBitrateChanged(double bitrate) {
-//        int rate = (int) bitrate;
-//        if (rate / 1000 > 0) {
-//            Log.i(TAG, String.format("Video bitrate: %f kbps", bitrate / 1000));
-//        } else {
-//            Log.i(TAG, String.format("Video bitrate: %d bps", rate));
-//        }
+        int rate = (int) bitrate;
+        if (rate / 1000 > 0) {
+            Log.i(TAG, String.format("Video bitrate: %f kbps", bitrate / 1000));
+        } else {
+            Log.i(TAG, String.format("Video bitrate: %d bps", rate));
+        }
     }
 
     @Override
     public void onRtmpAudioBitrateChanged(double bitrate) {
-//        int rate = (int) bitrate;
-//        if (rate / 1000 > 0) {
-//            Log.i(TAG, String.format("Audio bitrate: %f kbps", bitrate / 1000));
-//        } else {
-//            Log.i(TAG, String.format("Audio bitrate: %d bps", rate));
-//        }
+        int rate = (int) bitrate;
+        if (rate / 1000 > 0) {
+            Log.i(TAG, String.format("Audio bitrate: %f kbps", bitrate / 1000));
+        } else {
+            Log.i(TAG, String.format("Audio bitrate: %d bps", rate));
+        }
     }
 
     @Override
@@ -460,8 +478,7 @@ public class MainActivity extends AppCompatActivity implements RtmpHandler.RtmpL
 
     @Override
     public void onNetworkWeak() {
-//        Toast.makeText(getApplicationContext(), "Network weak", Toast.LENGTH_SHORT).show();
-        Log.e(TAG, "Network weak");
+        Toast.makeText(getApplicationContext(), "Network weak", Toast.LENGTH_SHORT).show();
     }
 
     @Override
@@ -473,4 +490,5 @@ public class MainActivity extends AppCompatActivity implements RtmpHandler.RtmpL
     public void onEncodeIllegalArgumentException(IllegalArgumentException e) {
         handleException(e);
     }
+
 }
