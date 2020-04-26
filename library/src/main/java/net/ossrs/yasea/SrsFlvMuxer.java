@@ -161,7 +161,9 @@ public class SrsFlvMuxer {
                             // isEmpty() may take some time, so we set timeout to detect next frame
                             txFrameLock.wait(500);
                         } catch (InterruptedException ie) {
-                            worker.interrupt();
+                            if (worker != null) {
+                                worker.interrupt();
+                            }
                         }
                     }
                 }

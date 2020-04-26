@@ -1,5 +1,6 @@
 package net.ossrs.yasea;
 
+import android.hardware.Camera;
 import android.media.AudioRecord;
 import android.media.audiofx.AcousticEchoCanceler;
 import android.media.audiofx.AutomaticGainControl;
@@ -77,6 +78,14 @@ public class SrsPublisher {
                 videoFrameCount = 0;
             }
         }
+    }
+
+    public void startCamera() {
+        mCameraView.startCamera();
+    }
+
+    public void stopCamera() {
+        mCameraView.stopCamera();
     }
 
     public void startAudio() {
@@ -174,6 +183,7 @@ public class SrsPublisher {
     public void pauseEncode(){
         stopAudio();
         mCameraView.disableEncoding();
+        mCameraView.stopTorch();
     }
     private void resumeEncode() {
         startAudio();
@@ -252,8 +262,29 @@ public class SrsPublisher {
         return mEncoder.isSoftEncoder();
     }
 
+    public int getPreviewWidth() {
+        return mEncoder.getPreviewWidth();
+    }
+
+    public int getPreviewHeight() {
+        return mEncoder.getPreviewHeight();
+    }
+
     public double getmSamplingFps() {
         return mSamplingFps;
+    }
+
+    public int getCameraId() {
+        return mCameraView.getCameraId();
+    }
+
+    public Camera getCamera() {
+        return mCameraView.getCamera();
+    }
+
+    public void setPreviewResolution(int width, int height) {
+        int resolution[] = mCameraView.setPreviewResolution(width, height);
+        mEncoder.setPreviewResolution(resolution[0], resolution[1]);
     }
 
     public void setOutputResolution(int width, int height) {
@@ -295,6 +326,20 @@ public class SrsPublisher {
 
     public boolean switchCameraFilter(MagicFilterType type) {
         return mCameraView.setFilter(type);
+    }
+
+    public void switchCameraFace(int id) {
+        mCameraView.stopCamera();
+        mCameraView.setCameraId(id);
+        if (id == 0) {
+            mEncoder.setCameraBackFace();
+        } else {
+            mEncoder.setCameraFrontFace();
+        }
+        if (mEncoder != null && mEncoder.isEnabled()) {
+            mCameraView.enableEncoding();
+        }
+        mCameraView.startCamera();
     }
 
     public void setRtmpHandler(RtmpHandler handler) {
