@@ -378,7 +378,12 @@ public class BitmapUtils {
     public static void saveBitmap(String filePath, ByteBuffer buffer, int width, int height) {
         BufferedOutputStream bos = null;
         try {
-            bos = new BufferedOutputStream(new FileOutputStream(filePath));
+            File targetFile = new File(filePath);
+            File parentFile = targetFile.getParentFile();
+            if (parentFile == null || !parentFile.exists()) {
+                parentFile.mkdir();
+            }
+            bos = new BufferedOutputStream(new FileOutputStream(targetFile));
             Bitmap bitmap = Bitmap.createBitmap(width, height, Bitmap.Config.ARGB_8888);
             bitmap.copyPixelsFromBuffer(buffer);
             bitmap = BitmapUtils.rotateBitmap(bitmap, 180, true);
