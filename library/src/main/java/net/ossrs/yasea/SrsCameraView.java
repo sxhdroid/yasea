@@ -12,6 +12,7 @@ import android.opengl.GLSurfaceView;
 import android.opengl.Matrix;
 import android.support.annotation.IntRange;
 import android.util.AttributeSet;
+import android.util.Log;
 import android.view.Surface;
 
 import com.seu.magicfilter.base.gpuimage.GPUImageFilter;
@@ -55,7 +56,7 @@ public class SrsCameraView extends GLSurfaceView implements GLSurfaceView.Render
     private ByteBuffer mGLPreviewBuffer;
     private int mCamId = -1;
     private int mPreviewRotation = 0;
-    private int mPreviewOrientation = Configuration.ORIENTATION_PORTRAIT;
+    private int mPreviewOrientation = Configuration.ORIENTATION_LANDSCAPE;
 
     private Thread worker;
     private final Object writeLock = new Object();
@@ -80,8 +81,11 @@ public class SrsCameraView extends GLSurfaceView implements GLSurfaceView.Render
     public void onSurfaceCreated(GL10 gl, EGLConfig config) {
         GLES20.glDisable(GL10.GL_DITHER);
         GLES20.glClearColor(0, 0, 0, 0);
-
-        magicFilter = new GPUImageFilter(MagicFilterType.NONE);
+        if (magicFilter != null) {
+            magicFilter.destroy();
+        } else {
+            magicFilter = new GPUImageFilter(MagicFilterType.NONE);
+        }
         magicFilter.init(getContext());
         magicFilter.onInputSizeChanged(mPreviewWidth, mPreviewHeight);
 
@@ -197,25 +201,7 @@ public class SrsCameraView extends GLSurfaceView implements GLSurfaceView.Render
         return new int[] { mPreviewWidth, mPreviewHeight };
     }
 
-    private void updateResolution() {
-        queueEvent(new Runnable() {
-            @Override
-            public void run() {
-                if (magicFilter != null) {
-                    magicFilter.destroy();
-                    magicFilter.init(getContext());
-                    magicFilter.onInputSizeChanged(mPreviewWidth, mPreviewHeight);
-                    magicFilter.onDisplaySizeChanged(mSurfaceWidth, mSurfaceHeight);
-                }
-            }
-        });
-    }
-
     public boolean setFilter(final MagicFilterType type) {
-        if (mCamera == null) {
-            return false;
-        }
-
         queueEvent(new Runnable() {
             @Override
             public void run() {
@@ -464,6 +450,7 @@ public class SrsCameraView extends GLSurfaceView implements GLSurfaceView.Render
 
         cameraCallbacksHandler.onCameraParameters(params);
         mCamera.setParameters(params);
+        Log.e("====", "mPreviewRotation = " + mPreviewRotation);
 
         mCamera.setDisplayOrientation(mPreviewRotation);
 

@@ -5,6 +5,7 @@ import android.content.SharedPreferences;
 import android.content.pm.ActivityInfo;
 import android.content.pm.PackageManager;
 import android.content.res.Configuration;
+import android.graphics.BitmapFactory;
 import android.hardware.Camera;
 import android.os.Build;
 import android.os.Bundle;
@@ -22,6 +23,7 @@ import android.widget.EditText;
 import android.widget.Toast;
 
 import com.github.faucamp.simplertmp.RtmpHandler;
+import com.seu.magicfilter.base.gpuimage.GPUWaterMarkFilter;
 import com.seu.magicfilter.utils.MagicFilterType;
 
 import net.ossrs.yasea.SrsCameraView;
@@ -29,8 +31,10 @@ import net.ossrs.yasea.SrsEncodeHandler;
 import net.ossrs.yasea.SrsPublisher;
 import net.ossrs.yasea.SrsRecordHandler;
 
+import java.io.File;
 import java.io.IOException;
 import java.net.SocketException;
+import java.nio.ByteBuffer;
 import java.util.Random;
 
 public class MainActivity extends AppCompatActivity implements RtmpHandler.RtmpListener,
@@ -52,8 +56,8 @@ public class MainActivity extends AppCompatActivity implements RtmpHandler.RtmpL
     private SrsPublisher mPublisher;
     private SrsCameraView mCameraView;
 
-    private int mWidth = 640;
-    private int mHeight = 480;
+    private int mWidth = 1920;
+    private int mHeight = 1080;
     private boolean isPermissionGranted = false;
 
     @Override
@@ -123,9 +127,13 @@ public class MainActivity extends AppCompatActivity implements RtmpHandler.RtmpL
         mPublisher.setRtmpHandler(new RtmpHandler(this));
         mPublisher.setRecordHandler(new SrsRecordHandler(this));
         mPublisher.setPreviewResolution(mWidth, mHeight);
-        mPublisher.setOutputResolution(mHeight, mWidth); // 这里要和preview反过来
-        mPublisher.setVideoHDMode();
+        // 竖屏要和preview反过来
+        mPublisher.setOutputResolution(mWidth, mHeight);
+//        mPublisher.setVideoHDMode();
+        mPublisher.switchToHardEncoder();
+        mPublisher.setBitrate(8000 * 1024);
         mPublisher.startCamera();
+        mCameraView.setWaterMark(BitmapFactory.decodeResource(getResources(), R.mipmap.ic_launcher), GPUWaterMarkFilter.Location.LOCATION_LEFT_TOP);
 
         mCameraView.setCameraCallbacksHandler(new SrsCameraView.CameraCallbacksHandler(){
             @Override
@@ -215,6 +223,21 @@ public class MainActivity extends AppCompatActivity implements RtmpHandler.RtmpL
                 }
             }
         });
+
+        findViewById(R.id.capture).setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                mPublisher.requestCaptureFrame(new SrsCameraView.CaptureFrameCallback() {
+                    @Override
+                    public void onCaptureFrame(byte[] data, int width, int height) {
+                        File path = Environment
+                                .getExternalStoragePublicDirectory(Environment.DIRECTORY_PICTURES);
+                        File file = new File(path,  "测试_" + System.currentTimeMillis() + ".jpg");
+                        BitmapUtils.saveBitmap(file.getAbsolutePath(), ByteBuffer.wrap(data), width, height);
+                    }
+                });
+            }
+        });
     }
 
     @Override
@@ -292,7 +315,7 @@ public class MainActivity extends AppCompatActivity implements RtmpHandler.RtmpL
     @Override
     protected void onStart() {
         super.onStart();
-        if(mPublisher.getCamera() == null && isPermissionGranted){
+        if(mPublisher != null && mPublisher.getCamera() == null && isPermissionGranted){
             //if the camera was busy and available again
             mPublisher.startCamera();
         }
