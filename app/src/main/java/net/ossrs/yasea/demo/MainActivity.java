@@ -199,14 +199,11 @@ public class MainActivity extends AppCompatActivity implements RtmpHandler.RtmpL
             public void onClick(View v) {
                 if (btnRecord.getText().toString().contentEquals("record")) {
                     if (mPublisher.startRecord(recPath)) {
-                        btnRecord.setText("pause");
+                        btnRecord.setText("stop");
                     }
-                } else if (btnRecord.getText().toString().contentEquals("pause")) {
-                    mPublisher.pauseRecord();
-                    btnRecord.setText("resume");
-                } else if (btnRecord.getText().toString().contentEquals("resume")) {
-                    mPublisher.resumeRecord();
-                    btnRecord.setText("pause");
+                } else if (btnRecord.getText().toString().contentEquals("stop")) {
+                    mPublisher.stopRecord();
+                    btnRecord.setText("record");
                 }
             }
         });
