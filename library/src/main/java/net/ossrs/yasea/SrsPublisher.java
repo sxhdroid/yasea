@@ -169,7 +169,8 @@ public class SrsPublisher {
         if (!mEncoder.start()) {
             return;
         }
-
+        int []resolution = mCameraView.getPreviewResolution();
+        mEncoder.setPreviewResolution(resolution[0], resolution[1]);
         mCameraView.enableEncoding();
 
         startAudio();
@@ -218,10 +219,12 @@ public class SrsPublisher {
         }
     }
     public boolean startRecord(String recPath) {
+        startEncode();
         return mMp4Muxer != null && mMp4Muxer.record(new File(recPath));
     }
 
     public void stopRecord() {
+        stopEncode();
         if (mMp4Muxer != null) {
             mMp4Muxer.stop();
         }
@@ -283,8 +286,7 @@ public class SrsPublisher {
     }
 
     public void setPreviewResolution(int width, int height) {
-        int resolution[] = mCameraView.setPreviewResolution(width, height);
-        mEncoder.setPreviewResolution(resolution[0], resolution[1]);
+        mCameraView.setPreviewResolution(width, height);
     }
 
     public void setOutputResolution(int width, int height) {

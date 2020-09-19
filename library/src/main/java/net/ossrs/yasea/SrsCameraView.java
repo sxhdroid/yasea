@@ -12,7 +12,6 @@ import android.opengl.GLSurfaceView;
 import android.opengl.Matrix;
 import android.support.annotation.IntRange;
 import android.util.AttributeSet;
-import android.util.Log;
 import android.view.Surface;
 
 import com.seu.magicfilter.base.gpuimage.GPUImageFilter;
@@ -175,16 +174,22 @@ public class SrsCameraView extends GLSurfaceView implements GLSurfaceView.Render
     public Camera getCamera(){
         return this.mCamera;
     }
+
     public void setPreviewCallback(Camera.PreviewCallback previewCallback){
         this.mCamera.setPreviewCallback(previewCallback);
     }
 
-    public int[] setPreviewResolution(int width, int height) {
-        mCamera = openCamera();
-
+    public void setPreviewResolution(int width, int height) {
         mPreviewWidth = width;
         mPreviewHeight = height;
-        Camera.Size rs = adaptPreviewResolution(mCamera.new Size(width, height));
+    }
+
+    public int[] getPreviewResolution() {
+        return new int[] { mPreviewWidth, mPreviewHeight };
+    }
+
+    private void innerSetPreviewResolution() {
+        Camera.Size rs = adaptPreviewResolution(mCamera.new Size(mPreviewWidth, mPreviewHeight));
         if (rs != null) {
             mPreviewWidth = rs.width;
             mPreviewHeight = rs.height;
@@ -196,9 +201,7 @@ public class SrsCameraView extends GLSurfaceView implements GLSurfaceView.Render
 
         mGLPreviewBuffer = ByteBuffer.allocate(mPreviewWidth * mPreviewHeight * 4);
         mInputAspectRatio = mPreviewWidth > mPreviewHeight ?
-            (float) mPreviewWidth / mPreviewHeight : (float) mPreviewHeight / mPreviewWidth;
-
-        return new int[] { mPreviewWidth, mPreviewHeight };
+                (float) mPreviewWidth / mPreviewHeight : (float) mPreviewHeight / mPreviewWidth;
     }
 
     public boolean setFilter(final MagicFilterType type) {
@@ -283,8 +286,6 @@ public class SrsCameraView extends GLSurfaceView implements GLSurfaceView.Render
         filter.setBitmap(bitmap);
         setFilter(filter);
     }
-
-
 
     public synchronized GPUImageFilter getMagicFilter() {
         return magicFilter;
@@ -415,8 +416,7 @@ public class SrsCameraView extends GLSurfaceView implements GLSurfaceView.Render
         }
 
         Camera.Parameters params = mCamera.getParameters();
-        //params.setPictureSize(mPreviewWidth, mPreviewHeight);
-        params.setPreviewSize(mPreviewWidth, mPreviewHeight);
+        innerSetPreviewResolution();
         int[] range = adaptFpsRange(SrsEncoder.VFPS, params.getSupportedPreviewFpsRange());
         params.setPreviewFpsRange(range[0], range[1]);
         params.setPreviewFormat(ImageFormat.NV21);
@@ -450,17 +450,15 @@ public class SrsCameraView extends GLSurfaceView implements GLSurfaceView.Render
 
         cameraCallbacksHandler.onCameraParameters(params);
         mCamera.setParameters(params);
-        Log.e("====", "mPreviewRotation = " + mPreviewRotation);
 
         mCamera.setDisplayOrientation(mPreviewRotation);
 
         try {
             mCamera.setPreviewTexture(surfaceTexture);
+            mCamera.startPreview();
         } catch (IOException e) {
             e.printStackTrace();
         }
-        mCamera.startPreview();
-
         return true;
     }
 
