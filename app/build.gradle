@@ -2,7 +2,6 @@ apply plugin: 'com.android.application'
 
 android {
     compileSdkVersion 26
-    buildToolsVersion "26.0.2"
 
     defaultConfig {
         applicationId "net.ossrs.yasea.demo"
@@ -11,7 +10,7 @@ android {
         versionCode 1
         versionName "1.9"
         ndk {
-            abiFilters "armeabi-v7a", "arm64-v8a", "x86"
+            abiFilters "armeabi-v7a"
         }
     }
     buildTypes {
@@ -23,8 +22,8 @@ android {
 }
 
 dependencies {
-    compile fileTree(dir: 'libx264.libs', include: ['*.jar'])
-    testCompile 'junit:junit:4.12'
-    compile 'com.android.support:appcompat-v7:26.1.0'
-    compile project(path: ':library')
+    implementation fileTree(dir: 'libx264.libs', include: ['*.jar'])
+    testImplementation 'junit:junit:4.12'
+    implementation 'com.android.support:appcompat-v7:26.1.0'
+    implementation project(path: ':library')
 }
